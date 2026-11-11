@@ -111,7 +111,7 @@ function Index() {
 
       <section className="rounded-2xl border bg-card p-6 text-center shadow-sm">
         <p className="text-sm uppercase tracking-widest text-muted-foreground">Depuis la dernière occurrence</p>
-        <p className="mt-2 font-mono text-4xl font-semibold text-primary">
+        <p className="mt-2 whitespace-nowrap font-mono text-3xl sm:text-4xl font-semibold text-primary">
           {last ? formatDuration(now - new Date(last).getTime()) : "—"}
         </p>
         <Button size="lg" onClick={add} className="mt-6 h-14 w-full text-lg">
