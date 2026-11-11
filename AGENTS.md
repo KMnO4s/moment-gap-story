@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- The app is a Standard Notes editor: note data lives as JSON in the note text via @standardnotes/component-relay (loaded with dynamic import, it breaks SSR); outside an iframe it falls back to localStorage demo mode. Why: no backend, data stays in the encrypted note.
+- public/ext.json is the Standard Notes extension manifest; its url must point to the published app.

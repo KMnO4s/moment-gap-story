@@ -1,0 +1,9 @@
+{
+  "identifier": "app.lovable.occurrence-tracker",
+  "name": "Compteur d'occurrences",
+  "content_type": "SN|Component",
+  "area": "editor-editor",
+  "version": "1.0.0",
+  "description": "Enregistrez chaque occurrence d'un évènement et suivez l'intervalle moyen.",
+  "url": "https://id-preview--ea4464c6-c70e-4b28-b597-79576d771675.lovable.app/"
+}
