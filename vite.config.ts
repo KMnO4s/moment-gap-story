@@ -15,4 +15,10 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Pre-bundle UI deps so Vite doesn't re-optimize mid-session (that caused duplicate React copies).
+  vite: {
+    optimizeDeps: {
+      include: ["@radix-ui/react-dialog", "lucide-react", "@standardnotes/component-relay"],
+    },
+  },
 });
