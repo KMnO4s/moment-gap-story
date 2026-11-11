@@ -1,0 +1,58 @@
+name: Publish GitHub Pages
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - run: bun install --frozen-lockfile
+      - run: bun run test
+      - name: Build static editor
+        run: bun run build
+        env:
+          GITHUB_PAGES: "true"
+          VITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
+      - name: Prepare extension manifest
+        run: |
+          test -f dist/client/index.html
+          node --input-type=module <<'JS'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const path = 'dist/client/ext.json';
+          const manifest = JSON.parse(readFileSync(path, 'utf8'));
+          manifest.url = `${process.env.PAGES_URL.replace(/\/$/, '')}/`;
+          writeFileSync(path, JSON.stringify(manifest, null, 2) + '\n');
+          writeFileSync('dist/client/.nojekyll', '');
+          JS
+        env:
+          PAGES_URL: ${{ steps.pages.outputs.origin }}${{ steps.pages.outputs.base_path }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/client
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

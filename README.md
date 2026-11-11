@@ -1,5 +1,14 @@
 # Welcome to your Lovable project
 
+## Publier cet éditeur sur GitHub Pages
+
+1. Dans Lovable, ouvrez **Paramètres → Git → GitHub** et connectez ce projet. Lovable crée un nouveau dépôt et y synchronise le code.
+2. Le dépôt doit être public pour utiliser GitHub Pages avec un compte GitHub gratuit. Dans GitHub, ouvrez **Settings → Pages** et choisissez **GitHub Actions** comme source si nécessaire.
+3. Dans **Actions**, lancez **Publish GitHub Pages** si la publication n'a pas démarré automatiquement.
+4. Après le succès de la publication, copiez l'adresse affichée par GitHub Pages, suivie de `/ext.json`, dans les extensions avancées de Standard Notes.
+
+La publication génère une version statique de l'éditeur et adapte automatiquement l'adresse du manifeste au dépôt. Aucune donnée de note n'est envoyée à GitHub : dans Standard Notes, elle reste dans la note chiffrée.
+
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
