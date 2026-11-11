@@ -28,7 +28,7 @@ export default defineConfig({
   vite: {
     base: githubPages ? basepath : "/",
     optimizeDeps: {
-      include: ["@radix-ui/react-dialog", "lucide-react", "@standardnotes/component-relay"],
+      include: ["@radix-ui/react-dialog", "lucide-react", "sn-extension-api"],
     },
   },
 });

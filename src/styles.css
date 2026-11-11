@@ -8,6 +8,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
+@import "sn-extension-api/dist/sn.min.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -56,6 +57,8 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
@@ -76,74 +79,49 @@
 
 :root {
   --radius: 0.75rem;
-  --background: oklch(0.975 0.008 85);
-  --foreground: oklch(0.22 0.02 60);
-  --card: oklch(0.995 0.004 85);
-  --card-foreground: oklch(0.22 0.02 60);
-  --popover: oklch(0.995 0.004 85);
-  --popover-foreground: oklch(0.22 0.02 60);
-  --primary: oklch(0.6 0.16 45);
-  --primary-foreground: oklch(0.99 0.005 85);
-  --secondary: oklch(0.93 0.015 85);
-  --secondary-foreground: oklch(0.22 0.02 60);
-  --muted: oklch(0.94 0.012 85);
-  --muted-foreground: oklch(0.5 0.02 60);
-  --accent: oklch(0.92 0.04 60);
-  --accent-foreground: oklch(0.22 0.02 60);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.88 0.015 80);
-  --input: oklch(0.88 0.015 80);
-  --ring: oklch(0.6 0.16 45);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.975 0.008 85);
-  --sidebar-foreground: oklch(0.22 0.02 60);
-  --sidebar-primary: oklch(0.6 0.16 45);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.93 0.015 85);
-  --sidebar-accent-foreground: oklch(0.22 0.02 60);
-  --sidebar-border: oklch(0.88 0.015 80);
-  --sidebar-ring: oklch(0.6 0.16 45);
+  --background: oklch(0.977 0.004 265);
+  --foreground: oklch(0.21 0.017 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.017 265);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.017 265);
+  --primary: oklch(0.62 0.19 259.8);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.96 0.005 265);
+  --secondary-foreground: oklch(0.21 0.017 265);
+  --muted: oklch(0.96 0.005 265);
+  --muted-foreground: oklch(0.55 0.02 265);
+  --accent: oklch(0.91 0.01 265);
+  --accent-foreground: oklch(0.21 0.017 265);
+  --destructive: oklch(0.64 0.21 25);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.91 0.01 265);
+  --input: oklch(0.91 0.01 265);
+  --ring: oklch(0.62 0.19 259.8);
+  --success: oklch(0.6 0.16 150);
+  --warning: oklch(0.72 0.15 85);
+}
+
+.dark {
+  --background: oklch(0.18 0.015 265);
+  --foreground: oklch(0.96 0.005 265);
+  --card: oklch(0.22 0.017 265);
+  --card-foreground: oklch(0.96 0.005 265);
+  --popover: oklch(0.22 0.017 265);
+  --popover-foreground: oklch(0.96 0.005 265);
+  --secondary: oklch(0.27 0.017 265);
+  --secondary-foreground: oklch(0.96 0.005 265);
+  --muted: oklch(0.27 0.017 265);
+  --muted-foreground: oklch(0.65 0.02 265);
+  --accent: oklch(0.32 0.017 265);
+  --accent-foreground: oklch(0.96 0.005 265);
+  --border: oklch(0.29 0.017 265);
+  --input: oklch(0.29 0.017 265);
+  --success: oklch(0.68 0.17 150);
+  --warning: oklch(0.78 0.15 85);
 }
 
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
-
-  body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-  }
+  * { border-color: var(--color-border); }
+  body { background-color: var(--color-background); color: var(--color-foreground); }
 }
-
-/* Dans Standard Notes : reprendre le thème et la police de l'application. */
-html.sn-embedded {
-  --background: var(--sn-stylekit-editor-background-color, var(--sn-stylekit-background-color, oklch(0.975 0.008 85)));
-  --foreground: var(--sn-stylekit-editor-foreground-color, var(--sn-stylekit-foreground-color, oklch(0.22 0.02 60)));
-  --card: var(--sn-stylekit-secondary-background-color, var(--background));
-  --card-foreground: var(--sn-stylekit-foreground-color, var(--foreground));
-  --popover: var(--sn-stylekit-background-color, var(--background));
-  --popover-foreground: var(--sn-stylekit-foreground-color, var(--foreground));
-  --primary: var(--sn-stylekit-info-color, oklch(0.6 0.16 45));
-  --primary-foreground: var(--sn-stylekit-info-contrast-color, oklch(0.99 0.005 85));
-  --ring: var(--primary);
-  --muted: var(--sn-stylekit-contrast-background-color, oklch(0.94 0.012 85));
-  --muted-foreground: var(--sn-stylekit-neutral-color, oklch(0.5 0.02 60));
-  --accent: var(--sn-stylekit-contrast-background-color, oklch(0.92 0.04 60));
-  --accent-foreground: var(--sn-stylekit-foreground-color, var(--foreground));
-  --secondary: var(--sn-stylekit-contrast-background-color, oklch(0.93 0.015 85));
-  --secondary-foreground: var(--sn-stylekit-foreground-color, var(--foreground));
-  --destructive: var(--sn-stylekit-danger-color, oklch(0.577 0.245 27.325));
-  --border: var(--sn-stylekit-border-color, oklch(0.88 0.015 80));
-  --input: var(--border);
-  --font-sans: var(--sn-stylekit-sans-serif-font, ui-sans-serif, system-ui, sans-serif);
-  --font-mono: var(--sn-stylekit-monospace-font, ui-monospace, monospace);
-}
-html.sn-embedded body { font-family: var(--sn-stylekit-sans-serif-font, inherit); }
-html.sn-embedded .font-sans { font-family: var(--sn-stylekit-sans-serif-font, inherit); }
-html.sn-embedded .font-mono { font-family: var(--sn-stylekit-monospace-font, monospace); }

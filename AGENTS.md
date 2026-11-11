@@ -29,7 +29,7 @@ use the editor.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
 
-- The app is a Standard Notes editor: note data lives as JSON in the note text via @standardnotes/component-relay (loaded with dynamic import, it breaks SSR); outside an iframe it falls back to localStorage demo mode. Why: no backend, data stays in the encrypted note.
+- The app is a Standard Notes editor: note data lives as JSON in the note text via sn-extension-api (dynamic import; an inline head script queues early Standard Notes messages and replays them). Why: no backend, data stays in the encrypted note.
 - public/ext.json is the Standard Notes extension manifest; its url must point to the published app.
 - GitHub Pages uses a CI-only prerender build with Nitro disabled and a repository base path; the normal Lovable build remains unchanged. The workflow rewrites the built extension manifest to the Pages URL so installation never uses a preview address.
 - Bump `version` in public/ext.json on every user-visible change; the editor footer shows it. Why: Standard Notes caches editors and only refreshes on version change.

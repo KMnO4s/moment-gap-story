@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import type ComponentRelay from "@standardnotes/component-relay";
-import { Plus, History, Trash2 } from "lucide-react";
+import { Plus, History, Trash2, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import manifest from "../../public/ext.json";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,37 +29,38 @@ const DEMO_KEY = "occurrence-tracker-demo";
 function Index() {
   const [data, setData] = useState<TrackerData>(emptyData);
   const [now, setNow] = useState(() => Date.now());
-  const relay = useRef<ComponentRelay | null>(null);
-  const item = useRef<any>(null);
-  const embedded = useRef(false);
+  const api = useRef<typeof import("sn-extension-api").default | null>(null);
   const lastSaved = useRef<string | null>(null);
-  const [status, setStatus] = useState("Mode démo (hors Standard Notes)");
+  const [status, setStatus] = useState<"checking" | "connected" | "standalone">("checking");
 
   useEffect(() => {
-    embedded.current = window.parent !== window;
-    if (embedded.current) {
-      let r: ComponentRelay | undefined;
-      let cancelled = false;
-      import("@standardnotes/component-relay").then(({ default: Relay }) => {
+    const w = window as any;
+    if (window.parent === window) {
+      setStatus("standalone");
+      setData(parseNote(localStorage.getItem(DEMO_KEY)));
+      return undefined;
+    }
+    let unsub: (() => void) | undefined;
+    let cancelled = false;
+    let stopTheme: (() => void) | undefined;
+    import("sn-extension-api").then(({ default: sn }) => {
       if (cancelled) return;
-      r = new Relay({ targetWindow: window, options: { coallesedSaving: false, acceptsThemes: true } });
-      document.documentElement.classList.add("sn-embedded");
-      relay.current = r;
-      r.streamContextItem((note: any) => {
-        const switched = item.current?.uuid !== note.uuid;
-        item.current = note;
-        if (note.isMetadataUpdate && !switched) return;
-        const text = note.content?.text ?? "";
-        if (!switched && text === lastSaved.current) return;
+      api.current = sn;
+      sn.initialize({ debounceSave: 0 } as any);
+      unsub = sn.subscribe((text: string) => {
+        setStatus("connected");
+        if (text === lastSaved.current) return;
         lastSaved.current = text;
-        setStatus("Connecté à la note");
         setData(parseNote(text));
       });
-      });
-      return () => { cancelled = true; r?.deinit(); };
-    }
-    setData(parseNote(localStorage.getItem(DEMO_KEY)));
-    return undefined;
+      stopTheme = watchDarkTheme();
+      // Rejouer les messages reçus avant que l'éditeur soit prêt.
+      const queued: unknown[] = w.__snQueue ?? [];
+      if (w.__snListen) window.removeEventListener("message", w.__snListen);
+      w.__snQueue = [];
+      for (const d of queued) window.dispatchEvent(new MessageEvent("message", { data: d }));
+    });
+    return () => { cancelled = true; unsub?.(); stopTheme?.(); };
   }, []);
 
   useEffect(() => {
@@ -71,19 +71,15 @@ function Index() {
   const save = (next: TrackerData) => {
     setData(next);
     const text = serializeNote(next);
-    if (!embedded.current) {
+    if (status === "standalone") {
       localStorage.setItem(DEMO_KEY, text);
       return;
     }
-    const note = item.current;
-    if (!note || !relay.current) { setStatus("Non connecté à la note — modification non enregistrée"); return; }
+    if (!api.current || status !== "connected") return;
     const last = next.occurrences.at(-1);
     lastSaved.current = text;
-    relay.current.saveItemWithPresave(note, () => {
-      note.content.text = text;
-      setStatus(`Enregistré à ${new Date().toLocaleTimeString("fr-FR")}`);
-      note.content.preview_plain = `${next.occurrences.length} occurrence(s)${last ? ` · dernière le ${formatDate(last)}` : ""}`;
-    });
+    api.current.text = text;
+    api.current.preview = `${next.occurrences.length} occurrence(s)${last ? ` · dernière le ${formatDate(last)}` : ""}`;
   };
 
   const occ = data.occurrences;
@@ -94,12 +90,15 @@ function Index() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-8 px-5 py-8 font-sans">
+      <div className="flex items-center gap-3">
       <input
         aria-label="Nom de l'évènement"
         value={data.title}
         onChange={(e) => save({ ...data, title: e.target.value })}
         className="w-full bg-transparent text-3xl font-bold tracking-tight outline-none focus:border-b-2 focus:border-primary"
       />
+        <ConnectionIcon status={status} />
+      </div>
 
       <section className="rounded-2xl border bg-card p-6 text-center shadow-sm">
         <p className="text-sm uppercase tracking-widest text-muted-foreground">Depuis la dernière occurrence</p>
@@ -145,7 +144,7 @@ function Index() {
       </Dialog>
 
       <footer className="mt-auto text-center text-xs text-muted-foreground">
-        {status} · version {manifest.version}
+        version {manifest.version}
       </footer>
     </main>
   );
@@ -158,4 +157,45 @@ function Stat({ label, value }: { label: string; value: string }) {
       <p className="mt-1 font-mono text-lg font-semibold">{value}</p>
     </div>
   );
+}
+
+const STATUS_LABEL = {
+  connected: "Connecté à Standard Notes",
+  standalone: "Mode autonome : rien n'est enregistré dans Standard Notes",
+  checking: "Connexion à Standard Notes…",
+} as const;
+
+function ConnectionIcon({ status }: { status: keyof typeof STATUS_LABEL }) {
+  return (
+    <span title={STATUS_LABEL[status]} aria-label={STATUS_LABEL[status]} role="status" className="shrink-0">
+      {status === "connected" ? <CheckCircle2 className="h-6 w-6 text-success" />
+        : status === "standalone" ? <AlertTriangle className="h-6 w-6 text-warning" />
+        : <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
+    </span>
+  );
+}
+
+/** Bascule en sombre selon la couleur de fond du thème Standard Notes actif. */
+function watchDarkTheme() {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const sync = () => {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue("--sn-stylekit-background-color").trim();
+    let dark = mq.matches;
+    if (raw) {
+      const probe = document.createElement("div");
+      probe.style.color = raw;
+      document.body.appendChild(probe);
+      const n = getComputedStyle(probe).color.match(/[\d.]+/g)?.map(Number);
+      probe.remove();
+      if (n && n.length >= 3) dark = (0.299 * n[0]! + 0.587 * n[1]! + 0.114 * n[2]!) / 255 < 0.5;
+    }
+    document.documentElement.classList.toggle("dark", dark);
+  };
+  sync();
+  const timers = [200, 1000, 3000].map((t) => setTimeout(sync, t));
+  const obs = new MutationObserver(() => setTimeout(sync, 50));
+  obs.observe(document.head, { childList: true, subtree: true, attributes: true });
+  document.addEventListener("load", sync, true);
+  mq.addEventListener("change", sync);
+  return () => { timers.forEach(clearTimeout); obs.disconnect(); document.removeEventListener("load", sync, true); mq.removeEventListener("change", sync); };
 }
