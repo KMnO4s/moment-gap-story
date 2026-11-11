@@ -2,20 +2,47 @@ export type TrackerData = { version: 1; title: string; occurrences: string[]; le
 
 export const emptyData = (): TrackerData => ({ version: 1, title: "Mon évènement", occurrences: [] });
 
+const ISO_RE = /^-\s+(\d{4}-\d{2}-\d{2}T[\d:.]+Z)/;
+
+/** Texte lisible stocké dans la note : "# Titre" puis une ligne "- ISO · date locale" par occurrence. */
+export function serializeNote(d: TrackerData): string {
+  const lines = [`# ${d.title}`, ""];
+  for (const o of d.occurrences) lines.push(`- ${o} · ${formatDate(o)}`);
+  if (d.legacyText) lines.push("", "---", d.legacyText);
+  return lines.join("\n") + "\n";
+}
+
 export function parseNote(text: string | undefined | null): TrackerData {
   if (!text || !text.trim()) return emptyData();
-  try {
-    const d = JSON.parse(text);
-    if (d && Array.isArray(d.occurrences)) {
-      return {
-        version: 1,
-        title: typeof d.title === "string" ? d.title : "Mon évènement",
-        occurrences: d.occurrences.filter((x: unknown) => typeof x === "string").sort(),
-        ...(d.legacyText ? { legacyText: d.legacyText } : {}),
-      };
+  const t = text.trim();
+  if (t.startsWith("{")) {
+    try {
+      const d = JSON.parse(t);
+      if (d && Array.isArray(d.occurrences)) {
+        return {
+          version: 1,
+          title: typeof d.title === "string" ? d.title : "Mon évènement",
+          occurrences: d.occurrences.filter((x: unknown) => typeof x === "string").sort(),
+          ...(d.legacyText ? { legacyText: d.legacyText } : {}),
+        };
+      }
+    } catch {
+      /* texte non JSON */
     }
-  } catch {
-    /* texte non JSON */
+  }
+  if (t.startsWith("# ")) {
+    const lines = t.split("\n");
+    const title = lines[0]!.slice(2).trim() || "Mon évènement";
+    const occurrences: string[] = [];
+    let i = 1;
+    for (; i < lines.length; i++) {
+      const l = lines[i]!.trim();
+      if (l === "---") { i++; break; }
+      const m = ISO_RE.exec(l);
+      if (m && !Number.isNaN(Date.parse(m[1]!))) occurrences.push(m[1]!);
+    }
+    const rest = lines.slice(i).join("\n").trim();
+    return { version: 1, title, occurrences: occurrences.sort(), ...(rest ? { legacyText: rest } : {}) };
   }
   return { ...emptyData(), legacyText: text };
 }

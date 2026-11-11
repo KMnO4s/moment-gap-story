@@ -120,3 +120,30 @@
     color: var(--color-foreground);
   }
 }
+
+/* Dans Standard Notes : reprendre le thème et la police de l'application. */
+html.sn-embedded {
+  --background: var(--sn-stylekit-editor-background-color, var(--sn-stylekit-background-color, oklch(0.975 0.008 85)));
+  --foreground: var(--sn-stylekit-editor-foreground-color, var(--sn-stylekit-foreground-color, oklch(0.22 0.02 60)));
+  --card: var(--sn-stylekit-secondary-background-color, var(--background));
+  --card-foreground: var(--sn-stylekit-foreground-color, var(--foreground));
+  --popover: var(--sn-stylekit-background-color, var(--background));
+  --popover-foreground: var(--sn-stylekit-foreground-color, var(--foreground));
+  --primary: var(--sn-stylekit-info-color, oklch(0.6 0.16 45));
+  --primary-foreground: var(--sn-stylekit-info-contrast-color, oklch(0.99 0.005 85));
+  --ring: var(--primary);
+  --muted: var(--sn-stylekit-contrast-background-color, oklch(0.94 0.012 85));
+  --muted-foreground: var(--sn-stylekit-neutral-color, oklch(0.5 0.02 60));
+  --accent: var(--sn-stylekit-contrast-background-color, oklch(0.92 0.04 60));
+  --accent-foreground: var(--sn-stylekit-foreground-color, var(--foreground));
+  --secondary: var(--sn-stylekit-contrast-background-color, oklch(0.93 0.015 85));
+  --secondary-foreground: var(--sn-stylekit-foreground-color, var(--foreground));
+  --destructive: var(--sn-stylekit-danger-color, oklch(0.577 0.245 27.325));
+  --border: var(--sn-stylekit-border-color, oklch(0.88 0.015 80));
+  --input: var(--border);
+  --font-sans: var(--sn-stylekit-sans-serif-font, ui-sans-serif, system-ui, sans-serif);
+  --font-mono: var(--sn-stylekit-monospace-font, ui-monospace, monospace);
+}
+html.sn-embedded body { font-family: var(--sn-stylekit-sans-serif-font, inherit); }
+html.sn-embedded .font-sans { font-family: var(--sn-stylekit-sans-serif-font, inherit); }
+html.sn-embedded .font-mono { font-family: var(--sn-stylekit-monospace-font, monospace); }

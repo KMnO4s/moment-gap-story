@@ -7,7 +7,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  averageInterval, emptyData, formatDate, formatDuration, parseNote, type TrackerData,
+  averageInterval, emptyData, formatDate, formatDuration, parseNote, serializeNote, type TrackerData,
 } from "@/lib/occurrences";
 
 export const Route = createFileRoute("/")({
@@ -32,6 +32,7 @@ function Index() {
   const relay = useRef<ComponentRelay | null>(null);
   const item = useRef<any>(null);
   const embedded = useRef(false);
+  const lastSaved = useRef<string | null>(null);
 
   useEffect(() => {
     embedded.current = window.parent !== window;
@@ -40,12 +41,17 @@ function Index() {
       let cancelled = false;
       import("@standardnotes/component-relay").then(({ default: Relay }) => {
       if (cancelled) return;
-      r = new Relay({ targetWindow: window, options: { coallesedSaving: true, coallesedSavingDelay: 300 } } as any);
+      r = new Relay({ targetWindow: window, options: { coallesedSaving: false, acceptsThemes: true } });
+      document.documentElement.classList.add("sn-embedded");
       relay.current = r;
       r.streamContextItem((note: any) => {
+        const switched = item.current?.uuid !== note.uuid;
         item.current = note;
-        if (note.isMetadataUpdate) return;
-        setData(parseNote(note.content?.text));
+        if (note.isMetadataUpdate && !switched) return;
+        const text = note.content?.text ?? "";
+        if (!switched && text === lastSaved.current) return;
+        lastSaved.current = text;
+        setData(parseNote(text));
       });
       });
       return () => { cancelled = true; r?.deinit(); };
@@ -61,7 +67,7 @@ function Index() {
 
   const save = (next: TrackerData) => {
     setData(next);
-    const text = JSON.stringify(next);
+    const text = serializeNote(next);
     if (!embedded.current) {
       localStorage.setItem(DEMO_KEY, text);
       return;
@@ -69,6 +75,7 @@ function Index() {
     const note = item.current;
     if (!note || !relay.current) return;
     const last = next.occurrences.at(-1);
+    lastSaved.current = text;
     relay.current.saveItemWithPresave(note, () => {
       note.content.text = text;
       note.content.preview_plain = `${next.occurrences.length} occurrence(s)${last ? ` · dernière le ${formatDate(last)}` : ""}`;
