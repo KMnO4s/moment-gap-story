@@ -1,13 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Plus, History, Trash2, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
+import { Plus, History, Trash2, Pencil, Check, X, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import manifest from "../../public/ext.json";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  averageInterval, emptyData, formatDate, formatDuration, parseNote, serializeNote, type TrackerData,
+  addOccurrence, averageInterval, editOccurrence, emptyData, removeOccurrence, formatDate, formatDuration, parseNote, serializeNote, type TrackerData,
 } from "@/lib/occurrences";
 
 export const Route = createFileRoute("/")({
@@ -85,18 +91,21 @@ function Index() {
   const occ = data.occurrences;
   const last = occ.at(-1);
   const avg = averageInterval(occ);
-  const add = () => save({ ...data, occurrences: [...occ, new Date().toISOString()] });
-  const remove = (iso: string) => save({ ...data, occurrences: occ.filter((o) => o !== iso) });
+  const add = () => save({ ...data, occurrences: addOccurrence(occ, new Date().toISOString()) });
+  const [manual, setManual] = useState("");
+  const [editing, setEditing] = useState<{ iso: string; value: string } | null>(null);
+  const [toDelete, setToDelete] = useState<string | null>(null);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-8 px-5 py-8 font-sans">
-      <div className="flex items-center gap-3">
-      <input
-        aria-label="Nom de l'évènement"
-        value={data.title}
-        onChange={(e) => save({ ...data, title: e.target.value })}
-        className="w-full bg-transparent text-3xl font-bold tracking-tight outline-none focus:border-b-2 focus:border-primary"
-      />
+      <div className="flex items-start gap-3">
+        <Textarea
+          aria-label="Description"
+          placeholder="Description"
+          value={data.description}
+          onChange={(e) => save({ ...data, description: e.target.value })}
+          className="min-h-[60px] flex-1 resize-y"
+        />
         <ConnectionIcon status={status} />
       </div>
 
@@ -118,24 +127,45 @@ function Index() {
 
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="outline" disabled={!occ.length}><History /> Voir l'historique</Button>
+          <Button variant="outline"><History /> Voir l'historique</Button>
         </DialogTrigger>
         <DialogContent className="max-h-[80vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Historique — {data.title}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Historique</DialogTitle></DialogHeader>
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => { e.preventDefault(); const iso = fromLocal(manual); if (iso) { save({ ...data, occurrences: addOccurrence(occ, iso) }); setManual(""); } }}
+          >
+            <Input type="datetime-local" aria-label="Date de l'occurrence" value={manual} onChange={(e) => setManual(e.target.value)} />
+            <Button type="submit" disabled={!manual}><Plus /> Ajouter</Button>
+          </form>
           <ol className="divide-y">
             {[...occ].reverse().map((o, i, arr) => {
               const prev = arr[i + 1];
               return (
                 <li key={o} className="flex items-center justify-between gap-3 py-3">
-                  <div>
-                    <p className="font-medium">#{occ.length - i} · {formatDate(o)}</p>
-                    <p className="font-mono text-sm text-muted-foreground">
-                      {prev ? `+ ${formatDuration(new Date(o).getTime() - new Date(prev).getTime())}` : "Première occurrence"}
-                    </p>
-                  </div>
-                  <Button variant="ghost" size="icon" aria-label="Supprimer" onClick={() => remove(o)}>
-                    <Trash2 />
-                  </Button>
+                  {editing?.iso === o ? (
+                    <form
+                      className="flex flex-1 gap-2"
+                      onSubmit={(e) => { e.preventDefault(); const iso = fromLocal(editing.value); if (iso) save({ ...data, occurrences: editOccurrence(occ, o, iso) }); setEditing(null); }}
+                    >
+                      <Input type="datetime-local" aria-label="Nouvelle date" value={editing.value} onChange={(e) => setEditing({ iso: o, value: e.target.value })} />
+                      <Button type="submit" size="icon" aria-label="Valider"><Check /></Button>
+                      <Button type="button" variant="ghost" size="icon" aria-label="Annuler" onClick={() => setEditing(null)}><X /></Button>
+                    </form>
+                  ) : (
+                    <>
+                      <div>
+                        <p className="font-medium">#{occ.length - i} · {formatDate(o)}</p>
+                        <p className="font-mono text-sm text-muted-foreground">
+                          {prev ? `+ ${formatDuration(new Date(o).getTime() - new Date(prev).getTime())}` : "Première occurrence"}
+                        </p>
+                      </div>
+                      <div className="flex">
+                        <Button variant="ghost" size="icon" aria-label="Modifier" onClick={() => setEditing({ iso: o, value: toLocal(o) })}><Pencil /></Button>
+                        <Button variant="ghost" size="icon" aria-label="Supprimer" onClick={() => setToDelete(o)}><Trash2 /></Button>
+                      </div>
+                    </>
+                  )}
                 </li>
               );
             })}
@@ -143,11 +173,38 @@ function Index() {
         </DialogContent>
       </Dialog>
 
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette occurrence ?</AlertDialogTitle>
+            <AlertDialogDescription>{toDelete ? `Occurrence du ${formatDate(toDelete)}. Cette action est définitive.` : ""}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (toDelete) save({ ...data, occurrences: removeOccurrence(occ, toDelete) }); setToDelete(null); }}
+            >Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <footer className="mt-auto text-center text-xs text-muted-foreground">
         version {manifest.version}
       </footer>
     </main>
   );
+}
+
+const pad = (n: number) => String(n).padStart(2, "0");
+/** ISO → valeur d'un champ datetime-local (heure locale). */
+function toLocal(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function fromLocal(v: string): string | null {
+  const t = new Date(v).getTime();
+  return Number.isNaN(t) ? null : new Date(t).toISOString();
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

@@ -33,3 +33,4 @@ use the editor.
 - public/ext.json is the Standard Notes extension manifest; its url must point to the published app.
 - GitHub Pages uses a CI-only prerender build with Nitro disabled and a repository base path; the normal Lovable build remains unchanged. The workflow rewrites the built extension manifest to the Pages URL so installation never uses a preview address.
 - Bump `version` in public/ext.json on every user-visible change; the editor footer shows it. Why: Standard Notes caches editors and only refreshes on version change.
+- Theme colors and fonts map directly to Standard Notes --sn-stylekit-* variables (sn-extension-api CSS supplies defaults). Why: the editor must look identical to the active SN theme.

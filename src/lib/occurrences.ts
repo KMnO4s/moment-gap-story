@@ -1,12 +1,15 @@
-export type TrackerData = { version: 1; title: string; occurrences: string[]; legacyText?: string };
+export type TrackerData = { version: 1; description: string; occurrences: string[]; legacyText?: string };
 
-export const emptyData = (): TrackerData => ({ version: 1, title: "Mon évènement", occurrences: [] });
+export const emptyData = (): TrackerData => ({ version: 1, description: "", occurrences: [] });
 
 const ISO_RE = /^-\s+(\d{4}-\d{2}-\d{2}T[\d:.]+Z)/;
+const DESC = "Description :";
 
-/** Texte lisible stocké dans la note : "# Titre" puis une ligne "- ISO · date locale" par occurrence. */
+const norm = (list: string[]) => [...new Set(list)].sort();
+
+/** Texte lisible : "Description : …" puis une ligne "- ISO · date locale" par occurrence. */
 export function serializeNote(d: TrackerData): string {
-  const lines = [`# ${d.title}`, ""];
+  const lines = [`${DESC} ${d.description}`.trimEnd(), ""];
   for (const o of d.occurrences) lines.push(`- ${o} · ${formatDate(o)}`);
   if (d.legacyText) lines.push("", "---", d.legacyText);
   return lines.join("\n") + "\n";
@@ -21,31 +24,36 @@ export function parseNote(text: string | undefined | null): TrackerData {
       if (d && Array.isArray(d.occurrences)) {
         return {
           version: 1,
-          title: typeof d.title === "string" ? d.title : "Mon évènement",
-          occurrences: d.occurrences.filter((x: unknown) => typeof x === "string").sort(),
+          description: typeof d.description === "string" ? d.description : typeof d.title === "string" ? d.title : "",
+          occurrences: norm(d.occurrences.filter((x: unknown) => typeof x === "string")),
           ...(d.legacyText ? { legacyText: d.legacyText } : {}),
         };
       }
-    } catch {
-      /* texte non JSON */
-    }
+    } catch { /* texte non JSON */ }
   }
-  if (t.startsWith("# ")) {
+  const isNew = t.startsWith(DESC);
+  if (isNew || t.startsWith("# ")) {
     const lines = t.split("\n");
-    const title = lines[0]!.slice(2).trim() || "Mon évènement";
+    const desc: string[] = [isNew ? lines[0]!.slice(DESC.length).trim() : lines[0]!.slice(2).trim()];
     const occurrences: string[] = [];
     let i = 1;
     for (; i < lines.length; i++) {
-      const l = lines[i]!.trim();
+      const raw = lines[i]!;
+      const l = raw.trim();
       if (l === "---") { i++; break; }
       const m = ISO_RE.exec(l);
       if (m && !Number.isNaN(Date.parse(m[1]!))) occurrences.push(m[1]!);
+      else if (isNew && !occurrences.length) desc.push(raw);
     }
     const rest = lines.slice(i).join("\n").trim();
-    return { version: 1, title, occurrences: occurrences.sort(), ...(rest ? { legacyText: rest } : {}) };
+    return { version: 1, description: desc.join("\n").trim(), occurrences: norm(occurrences), ...(rest ? { legacyText: rest } : {}) };
   }
   return { ...emptyData(), legacyText: text };
 }
+
+export const addOccurrence = (list: string[], iso: string) => norm([...list, iso]);
+export const editOccurrence = (list: string[], old: string, next: string) => norm([...list.filter((o) => o !== old), next]);
+export const removeOccurrence = (list: string[], iso: string) => list.filter((o) => o !== iso);
 
 /** Intervalle moyen en ms entre occurrences, null si moins de 2. */
 export function averageInterval(occ: string[]): number | null {
