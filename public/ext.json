@@ -3,7 +3,7 @@
   "name": "Compteur d'occurrences",
   "content_type": "SN|Component",
   "area": "editor-editor",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Enregistrez chaque occurrence d'un \u00e9v\u00e8nement et suivez l'intervalle moyen.",
   "url": "https://id-preview--ea4464c6-c70e-4b28-b597-79576d771675.lovable.app/"
 }
