@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import type ComponentRelay from "@standardnotes/component-relay";
 import { Plus, History, Trash2 } from "lucide-react";
+import manifest from "../../public/ext.json";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -33,6 +34,7 @@ function Index() {
   const item = useRef<any>(null);
   const embedded = useRef(false);
   const lastSaved = useRef<string | null>(null);
+  const [status, setStatus] = useState("Mode démo (hors Standard Notes)");
 
   useEffect(() => {
     embedded.current = window.parent !== window;
@@ -51,6 +53,7 @@ function Index() {
         const text = note.content?.text ?? "";
         if (!switched && text === lastSaved.current) return;
         lastSaved.current = text;
+        setStatus("Connecté à la note");
         setData(parseNote(text));
       });
       });
@@ -73,11 +76,12 @@ function Index() {
       return;
     }
     const note = item.current;
-    if (!note || !relay.current) return;
+    if (!note || !relay.current) { setStatus("Non connecté à la note — modification non enregistrée"); return; }
     const last = next.occurrences.at(-1);
     lastSaved.current = text;
     relay.current.saveItemWithPresave(note, () => {
       note.content.text = text;
+      setStatus(`Enregistré à ${new Date().toLocaleTimeString("fr-FR")}`);
       note.content.preview_plain = `${next.occurrences.length} occurrence(s)${last ? ` · dernière le ${formatDate(last)}` : ""}`;
     });
   };
@@ -139,6 +143,10 @@ function Index() {
           </ol>
         </DialogContent>
       </Dialog>
+
+      <footer className="mt-auto text-center text-xs text-muted-foreground">
+        {status} · version {manifest.version}
+      </footer>
     </main>
   );
 }

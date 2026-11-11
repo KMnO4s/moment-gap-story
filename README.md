@@ -36,3 +36,7 @@ npm run dev
 - TypeScript
 - React
 - Tailwind CSS
+
+## Mettre à jour l'éditeur dans Standard Notes
+
+Standard Notes garde l'éditeur en mémoire. Après une publication : supprimez l'éditeur dans **Préférences → Général → Extensions avancées**, réinstallez-le avec l'adresse `…/ext.json`, puis redémarrez. La version affichée en bas de l'éditeur doit correspondre à celle de `public/ext.json`.
